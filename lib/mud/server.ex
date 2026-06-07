@@ -53,48 +53,14 @@ defmodule Mud.Server do
   end
 
   defp handle_line(line, socket, %{stage: :playing} = state) do
-    case Mud.Command.parse(line) do
-      :empty ->
-        state
+    {state, output} = Mud.Commands.dispatch(line, state)
+    if output, do: Socket.send(socket, output)
 
-      :look ->
-        Socket.send(socket, Mud.Room.look(state.room))
-        state
-
-      {:say, text} ->
-        Mud.Room.say(state.room, state.name, text)
-        Socket.send(socket, "Você diz: #{text}\r\n")
-        state
-
-      {:move, dir} ->
-        move(state, dir, socket)
-
-      :quit ->
-        Socket.send(socket, "Até a próxima.\r\n")
-        Socket.close(socket)
-        state
-
-      :unknown ->
-        Socket.send(
-          socket,
-          "Não entendi. Tente: olhar, dizer <algo>, norte/sul/leste/oeste, sair.\r\n"
-        )
-
-        state
-    end
-  end
-
-  defp move(state, dir, socket) do
-    case Mud.Room.exit_to(state.room, dir) do
-      {:ok, dest} ->
-        Mud.Room.leave(state.room)
-        desc = Mud.Room.enter(dest, state.name)
-        Socket.send(socket, desc)
-        %{state | room: dest}
-
-      :error ->
-        Socket.send(socket, "Não há saída nessa direção.\r\n")
-        state
+    if state[:quit?] do
+      Socket.close(socket)
+      %{state | stage: :closing}
+    else
+      state
     end
   end
 
