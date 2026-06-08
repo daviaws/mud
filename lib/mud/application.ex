@@ -14,7 +14,9 @@ defmodule Mud.Application do
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},
       {Registry, keys: :unique, name: Mud.SessionRegistry},
+      {Phoenix.PubSub, name: Mud.PubSub},
       Mud.World,
+      MudWeb.Endpoint,
       {ThousandIsland,
        port: @port,
        handler_module: Mud.Server,

@@ -8,7 +8,6 @@ defmodule Mud.MixProject do
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      deps_warnings: false
     ]
   end
 
@@ -24,7 +23,12 @@ defmodule Mud.MixProject do
   defp deps do
     [
       {:thousand_island, "~> 1.5"},
-      {:toml, "~> 0.7"}
+      {:toml, "~> 0.7"},
+      {:phoenix, "~> 1.8"},
+      {:phoenix_live_view, "~> 1.1"},
+      {:phoenix_html, "~> 4.3"},
+      {:bandit, "~> 1.1"},
+      {:observer_web, "~> 0.2"}
     ]
   end
 end
