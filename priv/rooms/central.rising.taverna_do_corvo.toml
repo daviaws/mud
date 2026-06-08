@@ -1,0 +1,8 @@
+id = "central.rising.taverna_do_corvo"
+name = "A Taverna do Corvo"
+description = """
+Mesas de madeira encardida e cheiro de cerveja velha.
+"""
+
+[exits]
+sul = "central.rising.praca_central"

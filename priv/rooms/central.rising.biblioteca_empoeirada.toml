@@ -1,0 +1,8 @@
+id = "central.rising.biblioteca_empoeirada"
+name = "Biblioteca Empoeirada"
+description = """
+Prateleiras infinitas se perdem na penumbra; o silêncio tem peso.
+"""
+
+[exits]
+oeste = "central.rising.praca_central"

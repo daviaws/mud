@@ -1,0 +1,10 @@
+id = "central.rising.praca_central"
+name = "Praça Central"
+description = """
+Uma praça de pedra com um chafariz seco no centro.
+Pombos fingem indiferença.
+"""
+
+[exits]
+norte = "central.rising.taverna_do_corvo"
+leste = "central.rising.biblioteca_empoeirada"

@@ -5,7 +5,7 @@ defmodule Mud.World do
   """
   use Supervisor
 
-  @start_room :praca
+  @start_room "central.rising.praca_central"
 
   def start_room, do: @start_room
 
@@ -13,32 +13,7 @@ defmodule Mud.World do
 
   @impl true
   def init(:ok) do
-    rooms = [
-      %{
-        id: :praca,
-        name: "Praça Central",
-        description:
-          "Uma praça de pedra com um chafariz seco no centro. " <>
-            "Pombos fingem indiferença. Há saídas ao norte e a leste.",
-        exits: %{"norte" => :taverna, "leste" => :biblioteca}
-      },
-      %{
-        id: :taverna,
-        name: "A Taverna do Corvo",
-        description:
-          "Mesas de madeira encardida e cheiro de cerveja velha. " <>
-            "A praça fica ao sul.",
-        exits: %{"sul" => :praca}
-      },
-      %{
-        id: :biblioteca,
-        name: "Biblioteca Empoeirada",
-        description:
-          "Prateleiras infinitas se perdem na penumbra; o silêncio tem peso. " <>
-            "A praça fica a oeste.",
-        exits: %{"oeste" => :praca}
-      }
-    ]
+    rooms = load_rooms()
 
     children =
       for room <- rooms do
@@ -46,5 +21,21 @@ defmodule Mud.World do
       end
 
     Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  defp load_rooms do
+    :mud
+    |> :code.priv_dir()
+    |> Path.join("rooms/*.toml")
+    |> Path.wildcard()
+    |> Enum.map(fn path ->
+      {:ok, data} = Toml.decode_file(path)
+      %{
+        id: data["id"],
+        name: data["name"],
+        description: String.trim(data["description"]),
+        exits: data["exits"] || %{}
+      }
+    end)
   end
 end
