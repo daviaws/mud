@@ -1,8 +1,13 @@
 defmodule Mud.Server do
   @moduledoc """
-  Um processo por conexão telnet. Mantém o estado do jogador e traduz
+  Um processo por conexão telnet. Mantém o estado da sessão e traduz
   bytes do socket em comandos. Mensagens vindas das salas chegam como
   `{:tell, msg}` em `handle_info/2`.
+
+  Estado da sessão:
+    - `stage`     — `:login | :playing | :closing`
+    - `buffer`    — bytes parciais ainda não processados
+    - `character` — `%Mud.Character{}` quando `:playing`, `nil` no login
   """
   use ThousandIsland.Handler
 
@@ -11,7 +16,7 @@ defmodule Mud.Server do
   @impl ThousandIsland.Handler
   def handle_connection(socket, _state) do
     Socket.send(socket, "Bem-vindo ao mundo.\r\nQual é o seu nome? ")
-    {:continue, %{stage: :login, name: nil, room: nil, buffer: ""}}
+    {:continue, %{stage: :login, buffer: "", character: nil}}
   end
 
   @impl ThousandIsland.Handler
@@ -46,10 +51,14 @@ defmodule Mud.Server do
         state
 
       name ->
-        room = resolve_room(Mud.Characters.load_or_create(name, Mud.World.start_room()))
-        desc = Mud.Room.enter(room, name)
+        character =
+          name
+          |> Mud.Characters.load_or_create(Mud.World.start_room())
+          |> resolve_room()
+
+        desc = Mud.Room.enter(character.room, character.name)
         Socket.send(socket, "\r\n" <> desc)
-        %{state | stage: :playing, name: name, room: room}
+        %{state | stage: :playing, character: character}
     end
   end
 
@@ -66,16 +75,15 @@ defmodule Mud.Server do
   end
 
   # Se a sala salva não existe mais (renomeada/removida), cai na sala inicial.
-  defp resolve_room(room) do
+  defp resolve_room(%Mud.Characters.Character{room: room} = character) do
     case Registry.lookup(Mud.RoomRegistry, room) do
-      [_ | _] -> room
-      [] -> Mud.World.start_room()
+      [_ | _] -> character
+      [] -> %{character | room: Mud.World.start_room()}
     end
   end
 
   ## Helpers
 
-  # Telnet manda linhas terminadas em CRLF. Acumulamos parciais no buffer.
   defp extract_lines(data) do
     parts = String.split(data, "\n")
     {complete, [rest]} = Enum.split(parts, -1)

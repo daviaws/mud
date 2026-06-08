@@ -25,7 +25,7 @@ defmodule Mud.Characters do
       Sync table :mnesia.add_table_copy([table, node(), copy_type])
       Wait for the table to be ready :mnesia.wait_for_tables([table], timeout).
   """
-  require Record
+    require Record
 
   @table :character
   @attrs [:name, :room, :attrs, :created_at, :last_seen]
@@ -34,11 +34,16 @@ defmodule Mud.Characters do
   @doc "Prepara o Mnesia em disco. Idempotente; seguro de chamar todo boot."
   def setup() do
     :mnesia.system_info(:directory)
+    |> to_string()
     |> File.mkdir_p!()
 
     :ok = :mnesia.start()
 
-    :mnesia.change_table_copy_type(:schema, node(), :disc_copies)
+    case :mnesia.change_table_copy_type(:schema, node(), :disc_copies) do
+      {:atomic, :ok} -> :ok
+      {:aborted, {:already_exists, :schema, _, :disc_copies}} -> :ok
+      {:aborted, reason} -> raise "Mnesia schema upgrade: #{inspect(reason)}"
+    end
 
     case :mnesia.create_table(@table, attributes: @attrs, disc_copies: [node()]) do
       {:atomic, :ok} -> :ok
@@ -51,28 +56,33 @@ defmodule Mud.Characters do
 
   @doc """
   Carrega o personagem pelo nome; cria com `default_room` se for novo.
-  Atualiza `last_seen` e retorna a sala onde o jogador deve entrar.
+  Atualiza `last_seen` e retorna um `%Mud.Character{}` pronto para sessão.
   """
   def load_or_create(name, default_room) do
-    {:atomic, character} =
+    {:atomic, rec} =
       :mnesia.transaction(fn ->
         case :mnesia.read(@table, name) do
           [rec] ->
-            :mnesia.write(character(rec, last_seen: now()))
-            rec
+            updated = character(rec, last_seen: now())
+            :mnesia.write(updated)
+            updated
 
           [] ->
-            rec = character(name: name, room: default_room, attrs: %{}, created_at: now(), last_seen: now())
+            rec =
+              character(
+                name: name,
+                room: default_room,
+                attrs: %{},
+                created_at: now(),
+                last_seen: now()
+              )
+
             :mnesia.write(rec)
             rec
         end
       end)
 
-    %Mud.Character{
-      name: character(character, :name),
-      room: character(character, :room),
-      attrs: character(character, :attrs)
-    }
+    to_struct(rec)
   end
 
   @doc "Persiste a sala atual do personagem."
@@ -82,7 +92,7 @@ defmodule Mud.Characters do
         rec =
           case :mnesia.read(@table, name) do
             [r] -> character(r, room: room, last_seen: now())
-            [] -> character(name: name, room: room, created_at: now(), last_seen: now())
+            [] -> character(name: name, room: room, attrs: %{}, created_at: now(), last_seen: now())
           end
 
         :mnesia.write(rec)
@@ -91,25 +101,27 @@ defmodule Mud.Characters do
     :ok
   end
 
-  @doc "Lê o personagem como mapa, ou `nil` se não existir."
+  @doc "Lê o personagem como `%Mud.Character{}`, ou `nil` se não existir."
   def get(name) do
     {:atomic, res} =
       :mnesia.transaction(fn ->
         case :mnesia.read(@table, name) do
-          [r] ->
-            %{
-              name: character(r, :name),
-              room: character(r, :room),
-              created_at: character(r, :created_at),
-              last_seen: character(r, :last_seen)
-            }
-
-          [] ->
-            nil
+          [r] -> to_struct(r)
+          [] -> nil
         end
       end)
 
     res
+  end
+
+  ## Helpers
+
+  defp to_struct(rec) do
+    %Mud.Characters.Character{
+      name: character(rec, :name),
+      room: character(rec, :room),
+      attrs: character(rec, :attrs) || %{}
+    }
   end
 
   defp now, do: System.system_time(:second)

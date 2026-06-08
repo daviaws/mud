@@ -3,6 +3,9 @@ defmodule Mud.Room do
   Uma sala. Mantém os ocupantes como `%{pid => nome}`, onde `pid` é o
   processo da conexão do jogador. Broadcast é simplesmente mandar
   `{:tell, mensagem}` para cada pid presente.
+
+  A sala não conhece `Mud.Characters` — persistência de sala é
+  responsabilidade de quem chama (comandos e `Mud.Server`).
   """
   use GenServer
 
@@ -41,7 +44,6 @@ defmodule Mud.Room do
     Process.monitor(pid)
     broadcast(state, "#{name} chega.", except: pid)
     state = put_in(state.occupants[pid], name)
-    Mud.Characters.set_room(name, state.id)
     {:reply, describe(state, pid), state}
   end
 
