@@ -41,6 +41,7 @@ defmodule Mud.Room do
     Process.monitor(pid)
     broadcast(state, "#{name} chega.", except: pid)
     state = put_in(state.occupants[pid], name)
+    Mud.Characters.set_room(name, state.id)
     {:reply, describe(state, pid), state}
   end
 

@@ -46,9 +46,10 @@ defmodule Mud.Server do
         state
 
       name ->
-        desc = Mud.Room.enter(Mud.World.start_room(), name)
+        room = resolve_room(Mud.Characters.load_or_create(name, Mud.World.start_room()))
+        desc = Mud.Room.enter(room, name)
         Socket.send(socket, "\r\n" <> desc)
-        %{state | stage: :playing, name: name, room: Mud.World.start_room()}
+        %{state | stage: :playing, name: name, room: room}
     end
   end
 
@@ -61,6 +62,14 @@ defmodule Mud.Server do
       %{state | stage: :closing}
     else
       state
+    end
+  end
+
+  # Se a sala salva não existe mais (renomeada/removida), cai na sala inicial.
+  defp resolve_room(room) do
+    case Registry.lookup(Mud.RoomRegistry, room) do
+      [_ | _] -> room
+      [] -> Mud.World.start_room()
     end
   end
 

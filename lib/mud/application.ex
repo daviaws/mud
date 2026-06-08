@@ -9,6 +9,8 @@ defmodule Mud.Application do
 
   @impl true
   def start(_type, _args) do
+    :ok = Mud.Characters.setup()
+
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},
       Mud.World,

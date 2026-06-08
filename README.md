@@ -3,7 +3,7 @@
 Run:
 ```
 mix deps.get
-iex -S mix
+eval $(cat .env) && iex -S mix
 ```
 
 Connect:
