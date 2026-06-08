@@ -56,6 +56,7 @@ defmodule Mud.Server do
           |> Mud.Characters.load_or_create(Mud.World.start_room())
           |> resolve_room()
 
+        Mud.Sessions.register(character.name)
         desc = Mud.Room.enter(character.room, character.name)
         Socket.send(socket, "\r\n" <> desc)
         %{state | stage: :playing, character: character}
@@ -67,6 +68,7 @@ defmodule Mud.Server do
     if output, do: Socket.send(socket, output)
 
     if state[:quit?] do
+      Mud.Sessions.unregister(state.character.name)
       Socket.close(socket)
       %{state | stage: :closing}
     else

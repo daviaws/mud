@@ -20,7 +20,7 @@ defmodule Mud.Commands do
   for path <- command_files, do: Logger.info(path)
 
   # Recompila este módulo quando qualquer arquivo de comando muda.
-  for path <- command_files, do: @external_resource path
+  for path <- command_files, do: @external_resource(path)
 
   @table (for path <- command_files,
               mod = Module.concat([Mud.Commands, Macro.camelize(Path.basename(path, ".ex"))]),

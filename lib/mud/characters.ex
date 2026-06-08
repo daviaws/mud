@@ -25,7 +25,7 @@ defmodule Mud.Characters do
       Sync table :mnesia.add_table_copy([table, node(), copy_type])
       Wait for the table to be ready :mnesia.wait_for_tables([table], timeout).
   """
-    require Record
+  require Record
 
   @table :character
   @attrs [:name, :room, :attrs, :created_at, :last_seen]
@@ -45,7 +45,7 @@ defmodule Mud.Characters do
       {:aborted, reason} -> raise "Mnesia schema upgrade: #{inspect(reason)}"
     end
 
-    case :mnesia.create_table(@table, attributes: @attrs, disc_copies: [node()]) do
+    case :mnesia.create_table(@table, attributes: @attrs, disc_copies: [node()], index: [:room]) do
       {:atomic, :ok} -> :ok
       {:aborted, {:already_exists, @table}} -> :ok
       {:aborted, reason} -> raise "Mnesia tabela #{@table}: #{inspect(reason)}"
@@ -85,14 +85,27 @@ defmodule Mud.Characters do
     to_struct(rec)
   end
 
+  @doc "Retorna todos os personagens em uma sala como lista de `%Character{}`."
+  def by_room(room_id) do
+    {:atomic, recs} =
+      :mnesia.transaction(fn ->
+        :mnesia.index_read(@table, room_id, :room)
+      end)
+
+    Enum.map(recs, &to_struct/1)
+  end
+
   @doc "Persiste a sala atual do personagem."
   def set_room(name, room) do
     {:atomic, :ok} =
       :mnesia.transaction(fn ->
         rec =
           case :mnesia.read(@table, name) do
-            [r] -> character(r, room: room, last_seen: now())
-            [] -> character(name: name, room: room, attrs: %{}, created_at: now(), last_seen: now())
+            [r] ->
+              character(r, room: room, last_seen: now())
+
+            [] ->
+              character(name: name, room: room, attrs: %{}, created_at: now(), last_seen: now())
           end
 
         :mnesia.write(rec)

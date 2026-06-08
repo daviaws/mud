@@ -37,7 +37,24 @@ defmodule Mud.Room do
   ## Callbacks
 
   @impl true
-  def init(attrs), do: {:ok, struct(__MODULE__, attrs)}
+  def init(attrs) do
+    occupants =
+      attrs.id
+      |> Mud.Characters.by_room()
+      |> Enum.flat_map(fn char ->
+        case Mud.Sessions.get(char.name) do
+          {:ok, pid} ->
+            Process.monitor(pid)
+            [{pid, char.name}]
+
+          :error ->
+            []
+        end
+      end)
+      |> Map.new()
+
+    {:ok, struct(__MODULE__, Map.put(attrs, :occupants, occupants))}
+  end
 
   @impl true
   def handle_call({:enter, name, pid}, _from, state) do

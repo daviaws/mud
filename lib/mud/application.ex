@@ -13,6 +13,7 @@ defmodule Mud.Application do
 
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},
+      {Registry, keys: :unique, name: Mud.SessionRegistry},
       Mud.World,
       {ThousandIsland,
        port: @port,
