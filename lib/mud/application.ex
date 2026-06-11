@@ -9,7 +9,13 @@ defmodule Mud.Application do
 
   @impl true
   def start(_type, _args) do
+    :mnesia.system_info(:directory)
+    |> to_string()
+    |> File.mkdir_p!()
+
+    :ok = :mnesia.start()
     :ok = Mud.Characters.setup()
+    :ok = Mud.Rooms.setup()
 
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},

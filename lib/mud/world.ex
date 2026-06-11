@@ -29,13 +29,22 @@ defmodule Mud.World do
     |> Path.join("rooms/*.toml")
     |> Path.wildcard()
     |> Enum.map(fn path ->
-      {:ok, data} = Toml.decode_file(path)
-      %{
-        id: data["id"],
-        name: data["name"],
-        description: String.trim(data["description"]),
-        exits: data["exits"] || %{}
-      }
+      {:ok, data = %{"id" => id}} = Toml.decode_file(path)
+
+      case Mud.Rooms.get(id) do
+        nil ->
+          room = %{
+            id: id,
+            name: data["name"],
+            description: String.trim(data["description"]),
+            exits: data["exits"] || %{}
+          }
+          Mud.Rooms.persist(room)
+          room
+
+        existing ->
+          existing
+      end
     end)
   end
 end

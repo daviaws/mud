@@ -33,12 +33,6 @@ defmodule Mud.Characters do
 
   @doc "Prepara o Mnesia em disco. Idempotente; seguro de chamar todo boot."
   def setup() do
-    :mnesia.system_info(:directory)
-    |> to_string()
-    |> File.mkdir_p!()
-
-    :ok = :mnesia.start()
-
     case :mnesia.change_table_copy_type(:schema, node(), :disc_copies) do
       {:atomic, :ok} -> :ok
       {:aborted, {:already_exists, :schema, _, :disc_copies}} -> :ok
