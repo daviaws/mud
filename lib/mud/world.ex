@@ -17,7 +17,7 @@ defmodule Mud.World do
 
     children =
       for room <- rooms do
-        Supervisor.child_spec({Mud.Room, room}, id: room.id)
+        Supervisor.child_spec({Mud.Rooms.Room, room}, id: room.id)
       end
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -39,6 +39,7 @@ defmodule Mud.World do
             description: String.trim(data["description"]),
             exits: data["exits"] || %{}
           }
+
           Mud.Rooms.persist(room)
           room
 

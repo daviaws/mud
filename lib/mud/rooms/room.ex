@@ -1,4 +1,4 @@
-defmodule Mud.Room do
+defmodule Mud.Rooms.Room do
   @moduledoc """
   Uma sala. Mantém os ocupantes como `%{pid => nome}`, onde `pid` é o
   processo da conexão do jogador. Broadcast é simplesmente mandar

@@ -57,7 +57,7 @@ defmodule Mud.Server do
           |> resolve_room()
 
         Mud.Sessions.register(character.name)
-        desc = Mud.Room.enter(character.room, character.name)
+        desc = Mud.Rooms.Room.enter(character.room, character.name)
         Socket.send(socket, "\r\n" <> desc)
         %{state | stage: :playing, character: character}
     end
