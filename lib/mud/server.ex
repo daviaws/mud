@@ -69,6 +69,7 @@ defmodule Mud.Server do
 
     if state[:quit?] do
       Mud.Sessions.unregister(state.character.name)
+      Mud.Rooms.Room.leave(state.character.room)
       Socket.close(socket)
       %{state | stage: :closing}
     else

@@ -9,7 +9,7 @@ defmodule Mud.Rooms.Room do
   """
   use GenServer
 
-  defstruct [:id, :name, :description, :exits, occupants: %{}]
+  defstruct [:id, :name, :description, :exits, occupants: %{}, monitors: %{}]
 
   ## API
 
@@ -38,29 +38,33 @@ defmodule Mud.Rooms.Room do
 
   @impl true
   def init(attrs) do
-    occupants =
+    entries =
       attrs.id
       |> Mud.Characters.by_room()
       |> Enum.flat_map(fn char ->
         case Mud.Sessions.get(char.name) do
           {:ok, pid} ->
-            Process.monitor(pid)
-            [{pid, char.name}]
-
+            ref = Process.monitor(pid)
+            [{pid, char.name, ref}]
           :error ->
             []
         end
       end)
-      |> Map.new()
 
-    {:ok, struct(__MODULE__, Map.put(attrs, :occupants, occupants))}
+    occupants = Map.new(entries, fn {pid, name, _ref} -> {pid, name} end)
+    monitors = Map.new(entries, fn {pid, _name, ref} -> {pid, ref} end)
+
+    {:ok, struct(__MODULE__, Map.merge(attrs, %{occupants: occupants, monitors: monitors}))}
   end
 
   @impl true
   def handle_call({:enter, name, pid}, _from, state) do
-    Process.monitor(pid)
+    ref = Process.monitor(pid)
+    state = %{state |
+      occupants: Map.put(state.occupants, pid, name),
+      monitors: Map.put(state.monitors, pid, ref)
+    }
     broadcast(state, "#{name} chega.", except: pid)
-    state = put_in(state.occupants[pid], name)
     {:reply, describe(state, pid), state}
   end
 
@@ -75,7 +79,9 @@ defmodule Mud.Rooms.Room do
   @impl true
   def handle_cast({:leave, pid}, state) do
     {name, occupants} = Map.pop(state.occupants, pid)
-    state = %{state | occupants: occupants}
+    {ref, monitors} = Map.pop(state.monitors, pid)
+    if ref, do: Process.demonitor(ref, [:flush])
+    state = %{state | occupants: occupants, monitors: monitors}
     if name, do: broadcast(state, "#{name} parte.")
     {:noreply, state}
   end
@@ -88,7 +94,8 @@ defmodule Mud.Rooms.Room do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     {name, occupants} = Map.pop(state.occupants, pid)
-    state = %{state | occupants: occupants}
+    {_, monitors} = Map.pop(state.monitors, pid)
+    state = %{state | occupants: occupants, monitors: monitors}
     if name, do: broadcast(state, "#{name} desaparece como fumaça.")
     {:noreply, state}
   end
