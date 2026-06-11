@@ -18,7 +18,7 @@ defmodule Mud.Rooms.Room do
   end
 
   @doc "Entra na sala. Retorna a descrição já formatada para o jogador."
-  def enter(id, name), do: GenServer.call(via(id), {:enter, name, self()})
+  def enter(id, name, from), do: GenServer.call(via(id), {:enter, name, self(), from})
 
   @doc "Sai da sala (assíncrono)."
   def leave(id, where), do: GenServer.cast(via(id), {:leave, self(), where})
@@ -58,13 +58,16 @@ defmodule Mud.Rooms.Room do
   end
 
   @impl true
-  def handle_call({:enter, name, pid}, _from, state) do
+  def handle_call({:enter, name, pid, from}, _from, state) do
     ref = Process.monitor(pid)
     state = %{state |
       occupants: Map.put(state.occupants, pid, name),
       monitors: Map.put(state.monitors, pid, ref)
     }
-    broadcast(state, "#{name} chega.", except: pid)
+    case from do
+      :connect -> broadcast(state, "#{name} se materializa através de uma bruma que surge.", except: pid)
+      dir -> broadcast(state, "#{name} chega de #{dir}.", except: pid)
+    end
     {:reply, describe(state, pid), state}
   end
 
