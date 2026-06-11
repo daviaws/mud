@@ -89,6 +89,16 @@ defmodule Mud.Characters do
     Enum.map(recs, &to_struct/1)
   end
 
+  @doc "Retorna todos os personagens tipo planta como lista de `%Character{}`."
+  def by_race(race) do
+    :mnesia.dirty_match_object({@table, :_, :_, :_, :_, :_})
+    |> Enum.filter(fn rec ->
+      character(rec, :attrs)[:race] == race or
+        character(rec, :attrs)["race"] == race
+    end)
+    |> Enum.map(&to_struct/1)
+  end
+
   @doc "Persiste a sala atual do personagem."
   def set_room(name, room) do
     {:atomic, :ok} =
@@ -119,6 +129,22 @@ defmodule Mud.Characters do
       end)
 
     res
+  end
+
+  @doc "Atualiza os attrs de um personagem."
+  def update_attrs(name, new_attrs) do
+    {:atomic, :ok} =
+      :mnesia.transaction(fn ->
+        case :mnesia.read(@table, name) do
+          [rec] ->
+            :mnesia.write(character(rec, attrs: new_attrs, last_seen: now()))
+
+          [] ->
+            :ok
+        end
+      end)
+
+    :ok
   end
 
   @doc "Remove um personagem pelo nome. Irreversível."

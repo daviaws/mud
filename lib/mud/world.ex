@@ -15,11 +15,12 @@ defmodule Mud.World do
   def init(:ok) do
     rooms = load_rooms()
 
-    children =
+    room_children =
       for room <- rooms do
         Supervisor.child_spec({Mud.Rooms.Room, room}, id: room.id)
       end
 
+    children = room_children ++ [{Mud.Characters.PlantSupervisor, []}]
     Supervisor.init(children, strategy: :one_for_one)
   end
 

@@ -99,7 +99,7 @@ defmodule Mud.Rooms.Room do
     plants =
       Mud.Characters.by_room(state.id)
       |> Enum.filter(fn c -> c.attrs[:race] == "plant" end)
-      |> Enum.map(fn c -> "#{c.name}" end)
+      |> Enum.map(fn c -> "#{c.name} (#{c.attrs[:stage]})" end)
 
     flora =
       case plants do
@@ -118,7 +118,11 @@ defmodule Mud.Rooms.Room do
         names -> "\r\nTambém aqui: " <> Enum.join(names, ", ") <> "."
       end
 
-    exits = "Saídas: #{state.exits |> Map.keys() |> Enum.join(", ")}"
+    exits =
+      case state.exits |> Map.keys() |> Enum.join(", ") do
+        "" -> ""
+        exits -> "Saídas: #{exits}"
+      end
 
     String.replace(
       """
