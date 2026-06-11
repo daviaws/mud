@@ -1,0 +1,9 @@
+id = "garden.main"
+name = "Campo Frutífero"
+description = """
+Um campo aberto coberto de vegetação densa.
+Frutas de cores variadas crescem por toda parte.
+O ar é pesado e úmido.
+"""
+
+[exits]

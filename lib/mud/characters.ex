@@ -127,6 +127,17 @@ defmodule Mud.Characters do
     res
   end
 
+  @doc "Remove um personagem pelo nome. Irreversível."
+  def delete(name) do
+    :mnesia.transaction(fn ->
+      :mnesia.delete(@table, name, :write)
+    end)
+    |> case do
+      {:atomic, :ok} -> :ok
+      {:aborted, reason} -> {:error, reason}
+    end
+  end
+
   ## Helpers
 
   defp to_struct(rec) do

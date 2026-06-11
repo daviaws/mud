@@ -5,9 +5,9 @@ defmodule Mud.World do
   """
   use Supervisor
 
-  @start_room "central.rising.praca_central"
-
-  def start_room, do: @start_room
+  def start_room do
+    Application.get_env(:mud, :start_room)
+  end
 
   def start_link(_), do: Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
 
