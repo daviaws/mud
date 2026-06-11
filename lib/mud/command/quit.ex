@@ -8,7 +8,7 @@ defmodule Mud.Commands.Quit do
   @impl true
   def run(_verb, _args, session) do
     Mud.Sessions.unregister(session.character.name)
-    Mud.Rooms.Room.leave(session.character.room)
+    Mud.Rooms.Room.leave(session.character.room, :disconnect)
     {Map.put(session, :quit?, true), "Até a próxima.\r\n"}
   end
 end

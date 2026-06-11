@@ -21,7 +21,7 @@ defmodule Mud.Rooms.Room do
   def enter(id, name), do: GenServer.call(via(id), {:enter, name, self()})
 
   @doc "Sai da sala (assíncrono)."
-  def leave(id), do: GenServer.cast(via(id), {:leave, self()})
+  def leave(id, where), do: GenServer.cast(via(id), {:leave, self(), where})
 
   @doc "Reolha a sala atual."
   def look(id), do: GenServer.call(via(id), {:look, self()})
@@ -77,12 +77,15 @@ defmodule Mud.Rooms.Room do
   end
 
   @impl true
-  def handle_cast({:leave, pid}, state) do
+  def handle_cast({:leave, pid, where}, state) do
     {name, occupants} = Map.pop(state.occupants, pid)
     {ref, monitors} = Map.pop(state.monitors, pid)
     if ref, do: Process.demonitor(ref, [:flush])
     state = %{state | occupants: occupants, monitors: monitors}
-    if name, do: broadcast(state, "#{name} parte.")
+    case where do
+      :disconnect -> disconnect(name, state)
+      dir -> if name, do: broadcast(state, "#{name} parte em direção #{dir}.")
+    end
     {:noreply, state}
   end
 
@@ -96,8 +99,12 @@ defmodule Mud.Rooms.Room do
     {name, occupants} = Map.pop(state.occupants, pid)
     {_, monitors} = Map.pop(state.monitors, pid)
     state = %{state | occupants: occupants, monitors: monitors}
-    if name, do: broadcast(state, "#{name} desaparece como fumaça.")
+    if name, do: disconnect(name, state)
     {:noreply, state}
+  end
+
+  def disconnect(name, state) do
+    if name, do: broadcast(state, "#{name} desaparece como fumaça.")
   end
 
   ## Helpers

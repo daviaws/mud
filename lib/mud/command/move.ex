@@ -16,7 +16,7 @@ defmodule Mud.Commands.Move do
 
     case Mud.Rooms.Room.exit_to(character.room, dir) do
       {:ok, dest} ->
-        Mud.Rooms.Room.leave(character.room)
+        Mud.Rooms.Room.leave(character.room, dir)
         Mud.Characters.set_room(character.name, dest)
         new_character = %{character | room: dest}
         {%{session | character: new_character}, Mud.Rooms.Room.enter(dest, character.name)}
