@@ -16,9 +16,8 @@ defmodule Admin.Erlang do
 
   def monitors_for_registry(registry, name) do
     with pid when is_pid(pid) <- pid_for_registry(registry, name) do
-       monitors(pid)
+      monitors(pid)
     end
-
   end
 
   def alive?(pid), do: Process.alive?(pid)

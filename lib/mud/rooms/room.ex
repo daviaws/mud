@@ -46,6 +46,7 @@ defmodule Mud.Rooms.Room do
           {:ok, pid} ->
             ref = Process.monitor(pid)
             [{pid, char.name, ref}]
+
           :error ->
             []
         end
@@ -60,14 +61,21 @@ defmodule Mud.Rooms.Room do
   @impl true
   def handle_call({:enter, name, pid, from}, _from, state) do
     ref = Process.monitor(pid)
-    state = %{state |
-      occupants: Map.put(state.occupants, pid, name),
-      monitors: Map.put(state.monitors, pid, ref)
+
+    state = %{
+      state
+      | occupants: Map.put(state.occupants, pid, name),
+        monitors: Map.put(state.monitors, pid, ref)
     }
+
     case from do
-      :connect -> broadcast(state, "#{name} se materializa através de uma bruma que surge.", except: pid)
-      dir -> broadcast(state, "#{name} chega de #{dir}.", except: pid)
+      :connect ->
+        broadcast(state, "#{name} se materializa através de uma bruma que surge.", except: pid)
+
+      dir ->
+        broadcast(state, "#{name} chega de #{dir}.", except: pid)
     end
+
     {:reply, describe(state, pid), state}
   end
 
@@ -85,10 +93,12 @@ defmodule Mud.Rooms.Room do
     {ref, monitors} = Map.pop(state.monitors, pid)
     if ref, do: Process.demonitor(ref, [:flush])
     state = %{state | occupants: occupants, monitors: monitors}
+
     case where do
       :disconnect -> disconnect(name, state)
       dir -> if name, do: broadcast(state, "#{name} parte em direção #{dir}.")
     end
+
     {:noreply, state}
   end
 

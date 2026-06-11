@@ -36,7 +36,9 @@ defmodule Mud.Commands.Move do
           {dir, _} -> dir
           nil -> nil
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 end
