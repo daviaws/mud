@@ -24,3 +24,6 @@ mud-*.tar
 
 # Everything in private folder is ignored.
 /priv/mnesia
+
+# Zip files
+*.zip
