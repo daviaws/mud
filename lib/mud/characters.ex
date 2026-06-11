@@ -52,7 +52,7 @@ defmodule Mud.Characters do
   Carrega o personagem pelo nome; cria com `default_room` se for novo.
   Atualiza `last_seen` e retorna um `%Mud.Character{}` pronto para sessão.
   """
-  def load_or_create(name, default_room) do
+  def load_or_create(name, default_room, attrs \\ %{}) do
     {:atomic, rec} =
       :mnesia.transaction(fn ->
         case :mnesia.read(@table, name) do
@@ -66,7 +66,7 @@ defmodule Mud.Characters do
               character(
                 name: name,
                 room: default_room,
-                attrs: %{},
+                attrs: attrs,
                 created_at: now(),
                 last_seen: now()
               )

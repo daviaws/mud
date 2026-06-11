@@ -16,6 +16,8 @@ defmodule Mud.Application do
     :ok = :mnesia.start()
     :ok = Mud.Characters.setup()
     :ok = Mud.Rooms.setup()
+    :ok = Mud.Seeder.setup()
+    :ok = Mud.Seeder.run()
 
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},

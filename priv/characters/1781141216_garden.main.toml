@@ -1,0 +1,222 @@
+version = 1781141216
+
+[[characters]]
+name = "vermelha-1"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "vermelha"
+effect = "poison"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "vermelha-2"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "vermelha"
+effect = "poison"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "vermelha-3"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "vermelha"
+effect = "poison"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "vermelha-4"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "vermelha"
+effect = "poison"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "vermelha-5"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "vermelha"
+effect = "poison"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-1"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-2"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-3"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-4"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-5"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-6"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-7"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "amarela-8"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "amarela"
+effect = "energy_boost"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "azul-1"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "azul"
+effect = "energy_drain"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "azul-2"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "azul"
+effect = "energy_drain"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "azul-3"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "azul"
+effect = "energy_drain"
+age = 0
+mature = false
+energy_level = 1.0
+ 
+[[characters]]
+name = "azul-4"
+room = "garden.main"
+ 
+[characters.attrs]
+type = "npc"
+race = "plant"
+plant_type = "azul"
+effect = "energy_drain"
+age = 0
+mature = false
+energy_level = 1.0
