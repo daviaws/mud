@@ -26,6 +26,48 @@ defmodule Mud.Seeder do
     :ok = :mnesia.wait_for_tables([@migration_table], 10_000)
   end
 
+  def all_migrations do
+    :mnesia.dirty_all_keys(@migration_table)
+    |> Enum.map(fn key ->
+      [rec] = :mnesia.dirty_read(@migration_table, key)
+
+      %{
+        room: seed_migration(rec, :room),
+        version: seed_migration(rec, :version)
+      }
+    end)
+  end
+
+  def rollback(version \\ :all) do
+    require Logger
+
+    :mnesia.dirty_all_keys(@migration_table)
+    |> Enum.each(fn room ->
+      [rec] = :mnesia.dirty_read(@migration_table, room)
+      ver = seed_migration(rec, :version)
+
+      if version == :all or ver >= version do
+        path =
+          File.cwd!()
+          |> Path.join("priv/characters/#{room}.toml")
+          |> Path.wildcard()
+          |> List.first()
+
+        if path do
+          {:ok, data} = Toml.decode_file(path)
+
+          Enum.each(data["characters"] || [], fn char ->
+            Logger.info("Rollback deletando #{char["name"]}")
+            Mud.Characters.delete(char["name"])
+          end)
+        end
+
+        :mnesia.dirty_delete(@migration_table, room)
+        Logger.info("Rollback concluído: #{room}")
+      end
+    end)
+  end
+
   def run do
     File.cwd!()
     |> Path.join("priv/characters/*.toml")

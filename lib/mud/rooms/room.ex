@@ -96,16 +96,16 @@ defmodule Mud.Rooms.Room do
   ## Helpers
 
   defp describe(state, pid) do
-     plants =
-       Mud.Characters.by_room(state.id)
-       |> Enum.filter(fn c -> c.attrs[:race] == "plant" end)
-       |> Enum.map(fn c -> "#{c.name}" end)
+    plants =
+      Mud.Characters.by_room(state.id)
+      |> Enum.filter(fn c -> c.attrs[:race] == "plant" end)
+      |> Enum.map(fn c -> "#{c.name}" end)
 
-     flora =
-       case plants do
-         [] -> ""
-         names -> "\r\nFlora: " <> Enum.join(names, ", ") <> "."
-       end
+    flora =
+      case plants do
+        [] -> ""
+        names -> "\r\nFlora: " <> Enum.join(names, ", ") <> "."
+      end
 
     players =
       state.occupants
