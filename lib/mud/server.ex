@@ -13,10 +13,12 @@ defmodule Mud.Server do
 
   alias ThousandIsland.Socket
 
+  @state %{stage: :login, buffer: "", character: nil}
+
   @impl ThousandIsland.Handler
   def handle_connection(socket, _state) do
     Socket.send(socket, "Bem-vindo ao mundo.\r\nQual é o seu nome? ")
-    {:continue, %{stage: :login, buffer: "", character: nil}}
+    {:continue, @state}
   end
 
   @impl ThousandIsland.Handler
@@ -67,15 +69,15 @@ defmodule Mud.Server do
     {state, output} = Mud.Commands.dispatch(line, state)
     if output, do: Socket.send(socket, output)
 
-    if state[:quit?] do
-      Mud.Sessions.unregister(state.character.name)
-      Mud.Rooms.Room.leave(state.character.room)
-      Socket.close(socket)
-      %{state | stage: :closing}
-    else
-      state
-    end
+    handle_state(socket, state)
   end
+
+  defp handle_state(socket, %{quit?: true} = state) do
+    Socket.close(socket)
+    %{state | stage: :closing}
+  end
+
+  defp handle_state(_socket, state), do: state
 
   # Se a sala salva não existe mais (renomeada/removida), cai na sala inicial.
   defp resolve_room(%Mud.Characters.Character{room: room} = character) do
