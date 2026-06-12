@@ -17,11 +17,12 @@ defmodule Mud.Application do
     :ok = Mud.Characters.setup()
     :ok = Mud.Rooms.setup()
     :ok = Mud.Seeder.setup()
-    :ok = Mud.Seeder.run()
+    :ok = Mud.Seeder.run(false)
 
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},
       {Registry, keys: :unique, name: Mud.SessionRegistry},
+      {Registry, keys: :unique, name: Mud.PlantRegistry},
       {Phoenix.PubSub, name: Mud.PubSub},
       Mud.World,
       MudWeb.Endpoint,

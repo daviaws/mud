@@ -68,12 +68,18 @@ defmodule Mud.Seeder do
     end)
   end
 
-  def run do
+  def run(reload \\ true) do
     File.cwd!()
     |> Path.join("priv/characters/*.toml")
     |> Path.wildcard()
     |> tap(fn files -> Logger.info("Seeder encontrou #{length(files)} arquivo(s)") end)
     |> Enum.each(&run_file/1)
+
+    if reload do
+      Mud.Characters.PlantSupervisor.reload()
+    end
+
+    :ok
   end
 
   defp run_file(path) do

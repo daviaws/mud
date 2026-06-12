@@ -14,6 +14,11 @@ defmodule Mud.Characters.PlantSupervisor do
     )
   end
 
+  @doc "Sobe processos só para plantas sem processo vivo registrado."
+  def reload do
+    GenServer.call(__MODULE__, :reload)
+  end
+
   def init(_) do
     {:ok, _} =
       DynamicSupervisor.start_link(
@@ -25,9 +30,21 @@ defmodule Mud.Characters.PlantSupervisor do
     {:ok, %{}}
   end
 
+  def handle_call(:reload, _from, state) do
+    load_plants()
+    {:reply, :ok, state}
+  end
+
   defp load_plants do
-    Mud.Characters.by_race("plant")
-    |> tap(fn plants -> Logger.info("PlantSupervisor carregando #{length(plants)} plantas") end)
-    |> Enum.each(&start_plant/1)
+    plants = Mud.Characters.by_race("plant")
+    Logger.info("PlantSupervisor verificando #{length(plants)} planta(s)")
+
+    Enum.each(plants, fn plant ->
+      case start_plant(plant) do
+        {:ok, _pid} -> Logger.info("#{plant.name} iniciada")
+        {:error, {:already_started, _pid}} -> :ok
+        {:error, reason} -> Logger.warning("#{plant.name} falhou: #{inspect(reason)}")
+      end
+    end)
   end
 end

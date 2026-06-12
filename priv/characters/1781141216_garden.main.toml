@@ -14,7 +14,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -31,7 +30,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -48,7 +46,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -65,7 +62,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -82,7 +78,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "hermaphrodite"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -99,7 +94,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -116,7 +110,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -133,7 +126,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -150,7 +142,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -167,7 +158,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -184,7 +174,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -201,7 +190,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "hermaphrodite"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -218,7 +206,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -235,7 +222,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -252,7 +238,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -269,7 +254,6 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "female"
-mature = false
 energy_level = 1.0
  
 [[characters]]
@@ -286,5 +270,4 @@ stage = "seed"
 stages = ["seed", "sprout", "mature", "old", "dead"]
 stage_duration = 2
 gender = "male"
-mature = false
 energy_level = 1.0

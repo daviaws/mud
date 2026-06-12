@@ -47,8 +47,8 @@ defmodule Mud.Commands do
 
   defp split(line) do
     case String.split(line, " ", parts: 2) do
-      [v] -> {v, ""}
-      [v, rest] -> {v, rest}
+      [v] -> {String.downcase(v), ""}
+      [v, rest] -> {String.downcase(v), rest}
     end
   end
 end

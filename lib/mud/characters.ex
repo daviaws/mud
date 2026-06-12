@@ -149,13 +149,28 @@ defmodule Mud.Characters do
 
   @doc "Remove um personagem pelo nome. Irreversível."
   def delete(name) do
-    :mnesia.transaction(fn ->
-      :mnesia.delete(@table, name, :write)
-    end)
+    case Registry.lookup(Mud.PlantRegistry, name) do
+      [{pid, _}] -> DynamicSupervisor.terminate_child(Mud.Characters.PlantDynSupervisor, pid)
+      [] -> :ok
+    end
+
+    mnesia_delete(name)
     |> case do
       {:atomic, :ok} -> :ok
       {:aborted, reason} -> {:error, reason}
     end
+  end
+
+  def mnesia_delete(name) do
+    :mnesia.transaction(fn -> :mnesia.delete(@table, name, :write) end)
+  end
+
+  @doc "Remove todas as plantas de uma sala: termina o processo e remove do Mnesia."
+  def delete_plants(room_id) do
+    room_id
+    |> by_room()
+    |> Enum.filter(&(&1.attrs[:race] == "plant"))
+    |> Enum.each(fn plant -> delete(plant.name) end)
   end
 
   ## Helpers
