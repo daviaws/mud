@@ -27,6 +27,8 @@ defmodule Mud.Characters do
   """
   require Record
 
+  require Logger
+
   @table :character
   @attrs [:name, :room, :attrs, :created_at, :last_seen]
   Record.defrecord(:character, @attrs)
@@ -149,15 +151,33 @@ defmodule Mud.Characters do
 
   @doc "Remove um personagem pelo nome. Irreversível."
   def delete(name) do
-    case Registry.lookup(Mud.PlantRegistry, name) do
-      [{pid, _}] -> DynamicSupervisor.terminate_child(Mud.Characters.PlantDynSupervisor, pid)
-      [] -> :ok
-    end
+    kill_process(name)
 
     mnesia_delete(name)
     |> case do
       {:atomic, :ok} -> :ok
       {:aborted, reason} -> {:error, reason}
+    end
+  end
+
+  @doc "Remove vários personagens de uma vez: mata os processos primeiro, depois uma única transação Mnesia."
+  def delete_many(names) do
+    Logger.info("Deletando #{length(names)} personagem(ns)")
+    Enum.each(names, &kill_process/1)
+
+    :mnesia.transaction(fn ->
+      Enum.each(names, &:mnesia.delete(@table, &1, :write))
+    end)
+    |> case do
+      {:atomic, :ok} -> :ok
+      {:aborted, reason} -> {:error, reason}
+    end
+  end
+
+  defp kill_process(name) do
+    case Registry.lookup(Mud.PlantRegistry, name) do
+      [{pid, _}] -> Process.exit(pid, :kill)
+      [] -> :ok
     end
   end
 
@@ -170,7 +190,8 @@ defmodule Mud.Characters do
     room_id
     |> by_room()
     |> Enum.filter(&(&1.attrs[:race] == "plant"))
-    |> Enum.each(fn plant -> delete(plant.name) end)
+    |> Enum.map(& &1.name)
+    |> delete_many()
   end
 
   ## Helpers

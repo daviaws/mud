@@ -56,10 +56,8 @@ defmodule Mud.Seeder do
         if path do
           {:ok, data} = Toml.decode_file(path)
 
-          Enum.each(data["characters"] || [], fn char ->
-            Logger.info("Rollback deletando #{char["name"]}")
-            Mud.Characters.delete(char["name"])
-          end)
+          Enum.map(data["characters"] || [], & &1["name"])
+          |> Mud.Characters.delete_many()
         end
 
         :mnesia.dirty_delete(@migration_table, room)

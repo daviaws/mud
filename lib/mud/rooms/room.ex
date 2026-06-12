@@ -126,12 +126,12 @@ defmodule Mud.Rooms.Room do
     plants =
       Mud.Characters.by_room(state.id)
       |> Enum.filter(fn c -> c.attrs[:race] == "plant" end)
-      |> Enum.map(fn c -> "#{c.name} (#{c.attrs[:stage]})" end)
 
     flora =
       case plants do
         [] -> ""
-        names -> "\r\nFlora: " <> Enum.join(names, ", ") <> "."
+        _ when length(plants) > 30 -> "\r\nFlora: " <> summarize(plants)
+        names -> "\r\nFlora: " <> Enum.map_join(names, ", ", &describe_plant/1) <> "."
       end
 
     players =
@@ -160,6 +160,24 @@ defmodule Mud.Rooms.Room do
       "\n",
       "\r\n"
     )
+  end
+
+  defp describe_plant(c), do: "#{c.name} (#{c.attrs[:stage]})"
+
+  defp summarize(plants) do
+    plants
+    |> Enum.group_by(& &1.attrs[:plant_type])
+    |> Enum.map(fn {type, group} ->
+      stages =
+        group
+        |> Enum.frequencies_by(& &1.attrs[:stage])
+        |> Enum.sort_by(fn {stage, _} -> stage end)
+        |> Enum.map_join(", ", fn {stage, count} -> "#{count} #{stage}" end)
+
+      "#{type}: #{length(group)} (#{stages})"
+    end)
+    |> Enum.join(" | ")
+    |> Kernel.<>(".")
   end
 
   defp broadcast(state, message, opts \\ []) do

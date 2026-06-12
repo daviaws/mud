@@ -15,7 +15,7 @@ defmodule Mud.Commands.Command do
   """
 
   @type session :: %{
-          required(:character) => Mud.Character.t(),
+          required(:character) => Mud.Characters.Character.t(),
           required(:stage) => :playing,
           optional(atom()) => any()
         }
