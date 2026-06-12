@@ -10,3 +10,7 @@ config :mud, MudWeb.Endpoint,
   server: true
 
 config :mud, :phoenix_json_library, Jason
+
+config :logger, level: :warning
+
+config :logger, :console, async: true

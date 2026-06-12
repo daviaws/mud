@@ -45,6 +45,7 @@ defmodule Mud.Characters.Plant do
           character
         end
 
+      Mud.Characters.update_attrs(character.name, character.attrs)
       schedule_tick()
       {:noreply, character}
     end
@@ -65,7 +66,6 @@ defmodule Mud.Characters.Plant do
       |> Map.put(:stage, stage)
       |> Map.put(:energy_level, energy)
 
-    Mud.Characters.update_attrs(character.name, new_attrs)
     %{character | attrs: new_attrs}
   end
 
@@ -80,7 +80,7 @@ defmodule Mud.Characters.Plant do
 
   defp maybe_conceive(character) do
     if can_spawn?(character) do
-      case elegible_partners(character) do
+      case Mud.Characters.PlantSupervisor.elegible_partners(character) do
         [] -> character
         candidates -> conceive(character, Enum.random(candidates))
       end
@@ -89,23 +89,7 @@ defmodule Mud.Characters.Plant do
     end
   end
 
-  defp elegible_partners(character) do
-    character.room
-    |> Mud.Characters.by_room()
-    |> Enum.filter(&(&1.attrs[:plant_type] == character.attrs[:plant_type]))
-    |> Enum.filter(fn _ -> :rand.uniform() <= 0.3 end)
-    |> Enum.filter(&compatible_partner?(character, &1))
-  end
-
   defp can_spawn?(%{attrs: %{gender: gender}}), do: gender in ["female", "hermaphrodite"]
-
-  defp compatible_partner?(character, other) do
-    other.name != character.name and
-      other.attrs[:race] == "plant" and
-      other.attrs[:plant_type] == character.attrs[:plant_type] and
-      other.attrs[:stage] in @reproductive_stages and
-      other.attrs[:gender] in ["male", "hermaphrodite"]
-  end
 
   defp conceive(character, partner) do
     parent_attrs = character.attrs
@@ -123,7 +107,6 @@ defmodule Mud.Characters.Plant do
 
     new_attrs = Map.put(parent_attrs, :pregnant_with, seed_attrs)
 
-    Mud.Characters.update_attrs(character.name, new_attrs)
     Logger.info("Reprodução: #{character.name} concebeu com #{partner.name}")
     %{character | attrs: new_attrs}
   end
@@ -136,11 +119,10 @@ defmodule Mud.Characters.Plant do
 
     room = pick_seed_room(character.room)
 
-    child = Mud.Characters.load_or_create(seed_name, room, seed_attrs)
+    child = Mud.Characters.create(seed_name, room, seed_attrs)
     Mud.Characters.PlantSupervisor.start_plant(child)
 
     cleared_attrs = Map.drop(character.attrs, [:pregnant_with])
-    Mud.Characters.update_attrs(character.name, cleared_attrs)
 
     Logger.info("Reprodução: #{character.name} lança semente -> #{seed_name} (#{room})")
     %{character | attrs: cleared_attrs}

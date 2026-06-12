@@ -81,14 +81,20 @@ defmodule Mud.Characters do
     to_struct(rec)
   end
 
+  @doc """
+  Cria o personagem, preferencilamente para NPCs, onde o processo de criação é controlado
+  """
+  def create(name, room, attrs) do
+    rec = character(name: name, room: room, attrs: attrs, created_at: now(), last_seen: nil)
+    :mnesia.dirty_write(rec)
+    to_struct(rec)
+  end
+
   @doc "Retorna todos os personagens em uma sala como lista de `%Character{}`."
   def by_room(room_id) do
-    {:atomic, recs} =
-      :mnesia.transaction(fn ->
-        :mnesia.index_read(@table, room_id, :room)
-      end)
-
-    Enum.map(recs, &to_struct/1)
+    @table
+    |> :mnesia.dirty_index_read(room_id, :room)
+    |> Enum.map(&to_struct/1)
   end
 
   @doc "Retorna todos os personagens tipo planta como lista de `%Character{}`."
@@ -122,31 +128,22 @@ defmodule Mud.Characters do
 
   @doc "Lê o personagem como `%Mud.Character{}`, ou `nil` se não existir."
   def get(name) do
-    {:atomic, res} =
-      :mnesia.transaction(fn ->
-        case :mnesia.read(@table, name) do
-          [r] -> to_struct(r)
-          [] -> nil
-        end
-      end)
-
-    res
+    case :mnesia.dirty_read(@table, name) do
+      [r] -> to_struct(r)
+      [] -> nil
+    end
   end
 
   @doc "Atualiza os attrs de um personagem."
   def update_attrs(name, new_attrs) do
-    {:atomic, :ok} =
-      :mnesia.transaction(fn ->
-        case :mnesia.read(@table, name) do
-          [rec] ->
-            :mnesia.write(character(rec, attrs: new_attrs, last_seen: now()))
+    case :mnesia.dirty_read(@table, name) do
+      [rec] ->
+        :mnesia.dirty_write(character(rec, attrs: new_attrs, last_seen: now()))
+        :ok
 
-          [] ->
-            :ok
-        end
-      end)
-
-    :ok
+      [] ->
+        :ok
+    end
   end
 
   @doc "Remove um personagem pelo nome. Irreversível."
