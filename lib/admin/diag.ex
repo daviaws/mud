@@ -24,7 +24,8 @@ defmodule Admin.Diag do
     %{
       memory: Map.new(memory, fn {k, v} -> {k, humanize(v)} end),
       process_count: :erlang.system_info(:process_count),
-      plants: DynamicSupervisor.count_children(Mud.Characters.PlantDynSupervisor),
+      plant_rooms: DynamicSupervisor.count_children(Mud.Characters.PlantDynSupervisor),
+      plant_records: Mud.Characters.by_race("plant") |> length(),
       character_table_size: :mnesia.table_info(:character, :size),
       mnesia_dcd_bytes: humanize(mnesia_dcd_size())
     }

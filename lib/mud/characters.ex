@@ -146,6 +146,17 @@ defmodule Mud.Characters do
     end
   end
 
+  def bulk_update(characters, dead_names) do
+    :mnesia.transaction(fn ->
+      Enum.each(characters, fn c ->
+        [rec] = :mnesia.read(@table, c.name)
+        :mnesia.write(character(rec, attrs: c.attrs, last_seen: now()))
+      end)
+
+      Enum.each(dead_names, &:mnesia.delete(@table, &1, :write))
+    end)
+  end
+
   @doc "Remove um personagem pelo nome. Irreversível."
   def delete(name) do
     kill_process(name)

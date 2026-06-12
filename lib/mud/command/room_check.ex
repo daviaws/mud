@@ -6,14 +6,26 @@ defmodule Mud.Commands.RoomCheck do
   def names, do: ~w(room_check)
 
   @impl true
-  def run(_verb, _args, session) do
-    output =
+  def run(_verb, args, session) do
+    plant_type = String.trim(args)
+
+    characters =
       session.character.room
       |> Mud.Characters.by_room()
+      |> filter_by_plant_type(plant_type)
+
+    output =
+      characters
       |> Enum.map(&format_character/1)
       |> Enum.join("\r\n")
 
     {session, "== Personagens em #{session.character.room} ==\r\n#{output}\r\n"}
+  end
+
+  defp filter_by_plant_type(characters, ""), do: characters
+
+  defp filter_by_plant_type(characters, plant_type) do
+    Enum.filter(characters, &(&1.attrs[:plant_type] == plant_type))
   end
 
   defp format_character(character) do

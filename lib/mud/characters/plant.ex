@@ -1,53 +1,173 @@
 defmodule Mud.Characters.Plant do
+  @moduledoc """
+  Um processo por sala. Mantém em memória a lista de plantas daquela
+  sala (`%Character{}`) e, a cada `world_tick_ms`, itera todas de uma
+  vez: envelhece, processa gestação/parto, e tenta concepção usando
+  doadores calculados a partir da própria lista.
+
+  Após cada tick, publica em ETS público (`@table`) o índice
+  `{room_id, plant_type} -> [nomes de doadores]` e a população por
+  tipo — leitura externa (status, diagnóstico, futuros agentes) sem
+  `GenServer.call` no processo da sala.
+
+  Persistência por entidade é preservada: cada planta que muda de
+  estágio é gravada via `Mud.Characters.update_attrs/2`; mortes via
+  `delete/1`; sementes via `create/3`.
+  """
   use GenServer
 
   require Logger
 
   @reproductive_stages ["mature", "old"]
+  @table Mud.Characters.PlantIndex
+  @donors_capacity 100
 
-  def child_spec(character) do
+  ## API
+
+  def child_spec({room_id, plants}) do
     %{
-      id: character.name,
-      start: {__MODULE__, :start_link, [character]},
+      id: {__MODULE__, room_id},
+      start: {__MODULE__, :start_link, [{room_id, plants}]},
       restart: :temporary
     }
   end
 
-  def start_link(character) do
-    GenServer.start_link(__MODULE__, character, name: via(character.name))
+  def start_link({room_id, plants}) do
+    GenServer.start_link(__MODULE__, {room_id, plants}, name: via(room_id))
   end
 
-  def init(character) do
+  @doc "Adiciona plantas (boot/reload, ou sementes vindas de outra sala) à lista local."
+  def add_plants(room_id, characters) when is_list(characters) do
+    GenServer.cast(via(room_id), {:add_plants, characters})
+  end
+
+  @doc "Nomes das plantas atualmente rastreadas por esta sala."
+  def plant_names(room_id) do
+    GenServer.call(via(room_id), :plant_names)
+  end
+
+  @doc "Doadores publicados (nomes) para `{room_id, plant_type}`."
+  def donors(room_id, plant_type) do
+    case :ets.lookup(@table, {:donors, room_id, plant_type}) do
+      [{_, names}] -> names
+      [] -> []
+    end
+  end
+
+  @doc "População publicada de `{room_id, plant_type}`."
+  def population(room_id, plant_type) do
+    case :ets.lookup(@table, {:population, room_id, plant_type}) do
+      [{_, count}] -> count
+      [] -> 0
+    end
+  end
+
+  defp via(room_id), do: {:via, Registry, {Mud.PlantRegistry, room_id}}
+
+  ## Callbacks
+
+  def init({room_id, plants}) do
+    ensure_table()
+    publish_index(room_id, plants)
     schedule_tick()
-    {:ok, character}
+    {:ok, %{room_id: room_id, plants: plants}}
   end
 
-  def handle_info(:tick, character) do
-    Logger.info("#{character.name} is aging")
-    character = age(character)
+  def handle_call(:plant_names, _from, state) do
+    {:reply, Enum.map(state.plants, & &1.name), state}
+  end
 
-    character =
-      if pregnant?(character) do
-        release_seed(character)
-      else
-        character
-      end
+  def handle_cast({:add_plants, characters}, state) do
+    {:noreply, %{state | plants: characters ++ state.plants}}
+  end
 
-    if character.attrs[:stage] == "dead" do
-      Logger.info("#{character.name} is dying")
-      Mud.Characters.mnesia_delete(character.name)
-      {:stop, :normal, character}
-    else
-      character =
-        if character.attrs[:stage] in @reproductive_stages do
-          maybe_conceive(character)
-        else
-          character
+  def handle_info(:tick, state) do
+    donors_by_type = group_donors(state.plants)
+    results = Enum.map(state.plants, &tick_plant(&1, donors_by_type))
+
+    persist(results)
+
+    alive_plants = for {:alive, plant, _persist?, _seed} <- results, do: plant
+    seeds = results |> Enum.map(&extract_seed/1) |> Enum.reject(&is_nil/1)
+    local_seeds = spawn_seeds(seeds, state.room_id)
+
+    if results != [] do
+      Logger.info("Plant(#{state.room_id}): #{length(alive_plants)} viva(s), #{length(seeds)} semente(s)")
+    end
+
+    final_plants = alive_plants ++ local_seeds
+    publish_index(state.room_id, final_plants)
+
+    schedule_tick()
+    {:noreply, %{state | plants: final_plants}}
+  end
+
+  defp persist(results) do
+    {updates, deletes} =
+      Enum.reduce(results, {[], []}, fn
+        {:alive, plant, true, _seed}, {u, d} -> {[plant | u], d}
+        {:alive, _plant, false, _seed}, acc -> acc
+        {:dead, name, _seed}, {u, d} -> {u, [name | d]}
+      end)
+
+    Mud.Characters.bulk_update(updates, deletes)
+  end
+
+  defp extract_seed({:alive, _plant, _persist?, seed}), do: seed
+  defp extract_seed({:dead, _name, seed}), do: seed
+
+  defp ensure_table do
+    case :ets.whereis(@table) do
+      :undefined ->
+        try do
+          :ets.new(@table, [:set, :public, :named_table, read_concurrency: true])
+        rescue
+          ArgumentError -> :ok
         end
 
-      Mud.Characters.update_attrs(character.name, character.attrs)
-      schedule_tick()
-      {:noreply, character}
+      _ ->
+        :ok
+    end
+  end
+
+  defp publish_index(room_id, plants) do
+    plants
+    |> Enum.group_by(& &1.attrs[:plant_type])
+    |> Enum.each(fn {plant_type, group} ->
+      donors =
+        group
+        |> Stream.filter(&(&1.attrs[:stage] in @reproductive_stages))
+        |> Stream.filter(&(&1.attrs[:gender] in ["male", "hermaphrodite"]))
+        |> Enum.map(& &1.name)
+
+      :ets.insert(@table, {{:donors, room_id, plant_type}, donors})
+      :ets.insert(@table, {{:population, room_id, plant_type}, length(group)})
+    end)
+  end
+
+  defp tick_plant(plant, donors_by_type) do
+    previous_stage = plant.attrs[:stage]
+    plant = age(plant)
+
+    {plant, seed} =
+      if pregnant?(plant) do
+        release_seed(plant)
+      else
+        {plant, nil}
+      end
+
+    if plant.attrs[:stage] == "dead" do
+      {:dead, plant.name, seed}
+    else
+      plant =
+        if plant.attrs[:stage] in @reproductive_stages do
+          maybe_conceive(plant, donors_by_type)
+        else
+          plant
+        end
+
+      persist? = plant.attrs[:stage] != previous_stage or seed != nil
+      {:alive, plant, persist?, seed}
     end
   end
 
@@ -78,11 +198,26 @@ defmodule Mud.Characters.Plant do
 
   defp pregnant?(character), do: character.attrs[:pregnant_with] != nil
 
-  defp maybe_conceive(character) do
+  defp group_donors(plants) do
+    plants
+    |> Enum.filter(&(&1.attrs[:stage] in @reproductive_stages))
+    |> Enum.filter(&(&1.attrs[:gender] in ["male", "hermaphrodite"]))
+    |> Enum.group_by(& &1.attrs[:plant_type])
+  end
+
+  defp maybe_conceive(character, donors_by_type) do
     if can_spawn?(character) do
-      case Mud.Characters.PlantSupervisor.elegible_partners(character) do
-        [] -> character
-        candidates -> conceive(character, Enum.random(candidates))
+      donors = Map.get(donors_by_type, character.attrs[:plant_type], [])
+
+      density = length(donors) / @donors_capacity
+      chance = max(1 - density, 0.10)
+      if :rand.uniform() < chance do
+        case Enum.reject(donors, &(&1.name == character.name)) do
+          [] -> character
+          candidates -> conceive(character, Enum.random(candidates))
+        end
+      else
+        character
       end
     else
       character
@@ -107,25 +242,8 @@ defmodule Mud.Characters.Plant do
 
     new_attrs = Map.put(parent_attrs, :pregnant_with, seed_attrs)
 
-    Logger.info("Reprodução: #{character.name} concebeu com #{partner.name}")
+    Logger.debug("Reprodução: #{character.name} concebeu com #{partner.name}")
     %{character | attrs: new_attrs}
-  end
-
-  defp release_seed(character) do
-    seed_attrs = character.attrs[:pregnant_with]
-
-    seed_name =
-      "#{character.attrs[:plant_type]}-#{:erlang.unique_integer([:positive, :monotonic])}"
-
-    room = pick_seed_room(character.room)
-
-    child = Mud.Characters.create(seed_name, room, seed_attrs)
-    Mud.Characters.PlantSupervisor.start_plant(child)
-
-    cleared_attrs = Map.drop(character.attrs, [:pregnant_with])
-
-    Logger.info("Reprodução: #{character.name} lança semente -> #{seed_name} (#{room})")
-    %{character | attrs: cleared_attrs}
   end
 
   defp roll_gender(parent_attrs, partner_attrs) do
@@ -137,6 +255,36 @@ defmodule Mud.Characters.Plant do
     else
       Enum.random(["male", "female"])
     end
+  end
+
+  defp release_seed(character) do
+    seed_attrs = character.attrs[:pregnant_with]
+    cleared_attrs = Map.drop(character.attrs, [:pregnant_with])
+    {%{character | attrs: cleared_attrs}, seed_attrs}
+  end
+
+  defp spawn_seeds(seeds, room_id) do
+    Enum.flat_map(seeds, fn seed_attrs ->
+      target_room = pick_seed_room(room_id)
+      name = "#{seed_attrs[:plant_type]}-#{:erlang.unique_integer([:positive, :monotonic])}"
+      child = Mud.Characters.create(name, target_room, seed_attrs)
+
+      cond do
+        target_room == room_id ->
+          [child]
+
+        match?([_], Registry.lookup(Mud.PlantRegistry, target_room)) ->
+          add_plants(target_room, [child])
+          []
+
+        true ->
+          Logger.warning(
+            "Semente #{name} criada em #{target_room} sem Plant ativo; será pega no próximo reload"
+          )
+
+          []
+      end
+    end)
   end
 
   defp pick_seed_room(current_room) do
@@ -152,6 +300,4 @@ defmodule Mud.Characters.Plant do
   defp tick_ms, do: Application.get_env(:mud, :world_tick_ms, 30_000)
 
   defp schedule_tick(), do: Process.send_after(self(), :tick, tick_ms())
-
-  defp via(name), do: {:via, Registry, {Mud.PlantRegistry, name}}
 end
