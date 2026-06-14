@@ -27,3 +27,7 @@ mud-*.tar
 
 # Zip files
 *.zip
+
+# Assets deps
+assets/node_modules/
+priv/static/assets/

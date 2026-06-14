@@ -17,6 +17,7 @@ defmodule Mud.Application do
     :ok = Mud.Characters.setup()
     :ok = Mud.Rooms.setup()
     :ok = Mud.Seeder.setup()
+    :ok = Mud.Blog.setup()
     :ok = Mud.Seeder.run(false)
 
     children = [

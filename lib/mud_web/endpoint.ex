@@ -21,5 +21,12 @@ defmodule MudWeb.Endpoint do
   plug(Plug.MethodOverride)
   plug(Plug.Head)
   plug(Plug.Session, store: :cookie, key: "_mud_key", signing_salt: "mudmudmud", same_site: "Lax")
+
+  plug Plug.Static,
+    at: "/",
+    from: :mud,
+    gzip: false,
+    only: ~w(assets)
+
   plug(MudWeb.Router)
 end
