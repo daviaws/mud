@@ -17,6 +17,11 @@ defmodule MudWeb.Router do
     plug MudWeb.Plugs.AdminAuth
   end
 
+  scope "/mud", MudWeb do
+    pipe_through :browser
+    live "/", MudLive.Client, :index
+  end
+
   scope "/blog", MudWeb do
     pipe_through :browser
 

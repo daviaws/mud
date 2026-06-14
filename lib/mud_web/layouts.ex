@@ -28,4 +28,10 @@ defmodule MudWeb.Layouts do
     </div>
     """
   end
+
+  def render("mud.html", assigns) do
+    ~H"""
+    <%= @inner_content %>
+    """
+  end
 end

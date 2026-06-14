@@ -9,6 +9,10 @@ defmodule MudWeb.Endpoint do
     ]
   )
 
+  socket "/socket", MudWeb.UserSocket,
+    websocket: true,
+    longpoll: false
+
   plug(Plug.RequestId)
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
 

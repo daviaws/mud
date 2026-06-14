@@ -1,5 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600&display=swap');
 
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--parchment-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faded);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -189,6 +206,7 @@ tr:hover td {
 }
 
 /* MD Editor */
+
 .md-editor {
   position: relative;
   margin-bottom: 1rem;
@@ -224,7 +242,7 @@ tr:hover td {
   min-height: calc(100vh - 8rem);
 }
 
-/* Blog */
+/* Blog público */
 
 .board-tabs {
   display: flex;
@@ -322,3 +340,164 @@ article time { font-size: 0.85rem; color: var(--ink-faded); display: block; marg
 
 .section-body p  { margin: 0.75rem 0; }
 .section-body h3 { margin: 1rem 0 0.5rem; color: var(--ink-faded); }
+
+/* MUD Client */
+
+.mud-client {
+  display: grid;
+  grid-template-columns: 200px 1fr 260px;
+  height: 100vh;
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: 'IM Fell English', Georgia, serif;
+  overflow: hidden;
+}
+
+.mud-left,
+.mud-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--parchment-dark);
+  border-right: 1px solid var(--border);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mud-right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+.mud-panel {
+  background: var(--parchment);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.75rem;
+}
+
+.mud-panel h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.mud-room { flex: 0 0 auto; }
+.mud-says {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#room-says {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mud-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.mud-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  background: var(--parchment);
+}
+
+.mud-line { margin: 0.1rem 0; color: var(--ink); }
+.mud-line.mud-system { color: var(--ink-faded); font-style: italic; }
+.mud-line.mud-error  { color: var(--accent); }
+.mud-line.mud-cmd-echo { color: var(--ink-faded); }
+
+.mud-input {
+  position: relative;
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  background: var(--parchment-dark);
+}
+
+.mud-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mud-prompt {
+  color: var(--accent);
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+#mud-cmd {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  outline: none;
+  margin-bottom: 0;
+  box-shadow: none;
+}
+
+#mud-cmd:focus {
+  border-bottom-color: var(--accent);
+  box-shadow: none;
+}
+
+.mud-history-list {
+  position: absolute;
+  bottom: 100%;
+  left: 1rem;
+  right: 1rem;
+  background: var(--parchment-dark);
+  border: 1px solid var(--border);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.mud-history-item {
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.mud-history-item:hover { background: var(--parchment); }
+
+.mud-say { margin-bottom: 0.4rem; font-size: 0.85rem; }
+.say-who { color: var(--accent); font-style: italic; }
+.mud-say-room {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.muted { color: var(--ink-faded); font-size: 0.85rem; }
+
+#room-desc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink-faded);
+}
