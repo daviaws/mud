@@ -501,3 +501,35 @@ article time { font-size: 0.85rem; color: var(--ink-faded); display: block; marg
   line-height: 1.6;
   color: var(--ink-faded);
 }
+
+/* Seletor de linguagem */
+
+.lang-buttons {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+.lang-buttons button {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.7;
+}
+
+.lang-buttons button:hover {
+  opacity: 1;
+}
+
+body {
+  top: 0 !important;
+}
+
+.skiptranslate {
+  display: none !important;
+}
