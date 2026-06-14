@@ -1,0 +1,11 @@
+<div class="login">
+  <h1>Admin</h1>
+  <%= if @error do %>
+    <p class="error"><%= @error %></p>
+  <% end %>
+  <form method="post" action="/admin/login">
+    <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+    <input type="password" name="password" placeholder="Senha" autofocus />
+    <button type="submit">Entrar</button>
+  </form>
+</div>

@@ -9,11 +9,21 @@ defmodule Mud.Application do
 
   @impl true
   def start(_type, _args) do
+    :mnesia.system_info(:directory)
+    |> to_string()
+    |> File.mkdir_p!()
+
+    :ok = :mnesia.start()
     :ok = Mud.Characters.setup()
+    :ok = Mud.Rooms.setup()
+    :ok = Mud.Seeder.setup()
+    :ok = Mud.Blog.setup()
+    :ok = Mud.Seeder.run(false)
 
     children = [
       {Registry, keys: :unique, name: Mud.RoomRegistry},
       {Registry, keys: :unique, name: Mud.SessionRegistry},
+      {Registry, keys: :unique, name: Mud.PlantRegistry},
       {Phoenix.PubSub, name: Mud.PubSub},
       Mud.World,
       MudWeb.Endpoint,

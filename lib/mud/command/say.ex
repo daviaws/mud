@@ -9,7 +9,7 @@ defmodule Mud.Commands.Say do
   def run(_verb, "", session), do: {session, "Dizer o quê?\r\n"}
 
   def run(_verb, text, session) do
-    Mud.Room.say(session.character.room, session.character.name, text)
+    Mud.Rooms.Room.say(session.character.room, session.character.name, text)
     {session, "Você diz: #{text}\r\n"}
   end
 end

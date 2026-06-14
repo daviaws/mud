@@ -24,3 +24,10 @@ mud-*.tar
 
 # Everything in private folder is ignored.
 /priv/mnesia
+
+# Zip files
+*.zip
+
+# Assets deps
+assets/node_modules/
+priv/static/assets/

@@ -5,9 +5,9 @@ defmodule Mud.World do
   """
   use Supervisor
 
-  @start_room "central.rising.praca_central"
-
-  def start_room, do: @start_room
+  def start_room do
+    Application.get_env(:mud, :start_room)
+  end
 
   def start_link(_), do: Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
 
@@ -15,11 +15,12 @@ defmodule Mud.World do
   def init(:ok) do
     rooms = load_rooms()
 
-    children =
+    room_children =
       for room <- rooms do
-        Supervisor.child_spec({Mud.Room, room}, id: room.id)
+        Supervisor.child_spec({Mud.Rooms.Room, room}, id: room.id)
       end
 
+    children = room_children ++ [{Mud.Characters.PlantSupervisor, []}]
     Supervisor.init(children, strategy: :one_for_one)
   end
 
@@ -29,13 +30,23 @@ defmodule Mud.World do
     |> Path.join("rooms/*.toml")
     |> Path.wildcard()
     |> Enum.map(fn path ->
-      {:ok, data} = Toml.decode_file(path)
-      %{
-        id: data["id"],
-        name: data["name"],
-        description: String.trim(data["description"]),
-        exits: data["exits"] || %{}
-      }
+      {:ok, data = %{"id" => id}} = Toml.decode_file(path)
+
+      case Mud.Rooms.get(id) do
+        nil ->
+          room = %{
+            id: id,
+            name: data["name"],
+            description: String.trim(data["description"]),
+            exits: data["exits"] || %{}
+          }
+
+          Mud.Rooms.persist(room)
+          room
+
+        existing ->
+          existing
+      end
     end)
   end
 end

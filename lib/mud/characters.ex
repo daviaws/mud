@@ -27,18 +27,14 @@ defmodule Mud.Characters do
   """
   require Record
 
+  require Logger
+
   @table :character
   @attrs [:name, :room, :attrs, :created_at, :last_seen]
   Record.defrecord(:character, @attrs)
 
   @doc "Prepara o Mnesia em disco. Idempotente; seguro de chamar todo boot."
   def setup() do
-    :mnesia.system_info(:directory)
-    |> to_string()
-    |> File.mkdir_p!()
-
-    :ok = :mnesia.start()
-
     case :mnesia.change_table_copy_type(:schema, node(), :disc_copies) do
       {:atomic, :ok} -> :ok
       {:aborted, {:already_exists, :schema, _, :disc_copies}} -> :ok
@@ -58,7 +54,7 @@ defmodule Mud.Characters do
   Carrega o personagem pelo nome; cria com `default_room` se for novo.
   Atualiza `last_seen` e retorna um `%Mud.Character{}` pronto para sessão.
   """
-  def load_or_create(name, default_room) do
+  def load_or_create(name, default_room, attrs \\ %{}) do
     {:atomic, rec} =
       :mnesia.transaction(fn ->
         case :mnesia.read(@table, name) do
@@ -72,7 +68,7 @@ defmodule Mud.Characters do
               character(
                 name: name,
                 room: default_room,
-                attrs: %{},
+                attrs: attrs,
                 created_at: now(),
                 last_seen: now()
               )
@@ -85,14 +81,30 @@ defmodule Mud.Characters do
     to_struct(rec)
   end
 
+  @doc """
+  Cria o personagem, preferencilamente para NPCs, onde o processo de criação é controlado
+  """
+  def create(name, room, attrs) do
+    rec = character(name: name, room: room, attrs: attrs, created_at: now(), last_seen: nil)
+    :mnesia.dirty_write(rec)
+    to_struct(rec)
+  end
+
   @doc "Retorna todos os personagens em uma sala como lista de `%Character{}`."
   def by_room(room_id) do
-    {:atomic, recs} =
-      :mnesia.transaction(fn ->
-        :mnesia.index_read(@table, room_id, :room)
-      end)
+    @table
+    |> :mnesia.dirty_index_read(room_id, :room)
+    |> Enum.map(&to_struct/1)
+  end
 
-    Enum.map(recs, &to_struct/1)
+  @doc "Retorna todos os personagens tipo planta como lista de `%Character{}`."
+  def by_race(race) do
+    :mnesia.dirty_match_object({@table, :_, :_, :_, :_, :_})
+    |> Enum.filter(fn rec ->
+      character(rec, :attrs)[:race] == race or
+        character(rec, :attrs)["race"] == race
+    end)
+    |> Enum.map(&to_struct/1)
   end
 
   @doc "Persiste a sala atual do personagem."
@@ -116,15 +128,78 @@ defmodule Mud.Characters do
 
   @doc "Lê o personagem como `%Mud.Character{}`, ou `nil` se não existir."
   def get(name) do
-    {:atomic, res} =
-      :mnesia.transaction(fn ->
-        case :mnesia.read(@table, name) do
-          [r] -> to_struct(r)
-          [] -> nil
-        end
+    case :mnesia.dirty_read(@table, name) do
+      [r] -> to_struct(r)
+      [] -> nil
+    end
+  end
+
+  @doc "Atualiza os attrs de um personagem."
+  def update_attrs(name, new_attrs) do
+    case :mnesia.dirty_read(@table, name) do
+      [rec] ->
+        :mnesia.dirty_write(character(rec, attrs: new_attrs, last_seen: now()))
+        :ok
+
+      [] ->
+        :ok
+    end
+  end
+
+  def bulk_update(characters, dead_names) do
+    :mnesia.transaction(fn ->
+      Enum.each(characters, fn c ->
+        [rec] = :mnesia.read(@table, c.name)
+        :mnesia.write(character(rec, attrs: c.attrs, last_seen: now()))
       end)
 
-    res
+      Enum.each(dead_names, &:mnesia.delete(@table, &1, :write))
+    end)
+  end
+
+  @doc "Remove um personagem pelo nome. Irreversível."
+  def delete(name) do
+    kill_process(name)
+
+    mnesia_delete(name)
+    |> case do
+      {:atomic, :ok} -> :ok
+      {:aborted, reason} -> {:error, reason}
+    end
+  end
+
+  @doc "Remove vários personagens de uma vez: mata os processos primeiro, depois uma única transação Mnesia."
+  def delete_many(names) do
+    Logger.info("Deletando #{length(names)} personagem(ns)")
+    Enum.each(names, &kill_process/1)
+
+    :mnesia.transaction(fn ->
+      Enum.each(names, &:mnesia.delete(@table, &1, :write))
+    end)
+    |> case do
+      {:atomic, :ok} -> :ok
+      {:aborted, reason} -> {:error, reason}
+    end
+  end
+
+  defp kill_process(name) do
+    case Registry.lookup(Mud.PlantRegistry, name) do
+      [{pid, _}] -> Process.exit(pid, :kill)
+      [] -> :ok
+    end
+  end
+
+  def mnesia_delete(name) do
+    :mnesia.transaction(fn -> :mnesia.delete(@table, name, :write) end)
+  end
+
+  @doc "Remove todas as plantas de uma sala: termina o processo e remove do Mnesia."
+  def delete_plants(room_id) do
+    room_id
+    |> by_room()
+    |> Enum.filter(&(&1.attrs[:race] == "plant"))
+    |> Enum.map(& &1.name)
+    |> delete_many()
   end
 
   ## Helpers

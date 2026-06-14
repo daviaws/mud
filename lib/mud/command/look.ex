@@ -7,6 +7,6 @@ defmodule Mud.Commands.Look do
 
   @impl true
   def run(_verb, _args, session) do
-    {session, Mud.Room.look(session.character.room)}
+    {session, Mud.Rooms.Room.look(session.character.room)}
   end
 end
